@@ -1,4 +1,8 @@
-# PayRecover (Jev)
+![PayRecover — Jev, typed decisions for failed payments](docs/cover.jpg)
+
+[![MIT](https://img.shields.io/badge/license-MIT-3d3d3d)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11%2B-3d3d3d)](pyproject.toml)
+[![Razorpay test mode](https://img.shields.io/badge/razorpay-test%20mode-3d3d3d)](https://razorpay.com/docs/payments/payments/test-card-details/)
 
 Detects failed Razorpay one-time payments, diagnoses the cause with a
 **rules-first → Jev typed decision → Gemini fallback** cascade, and recovers
