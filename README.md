@@ -145,15 +145,22 @@ used — so rules accuracy on tagged reasons can be tautological. Say all of thi
 report. Real-cohort numbers never go in the synthetic headline table; `derived` labels
 never count toward accuracy.
 
-## Limitations (read before posting)
+## Limitations
 
-- Dataset is **synthetic** (diverse paraphrases + hard/adversarial families), not
-  production Razorpay logs. The real cohort above is a secondary API-shape check —
-  **not a benchmark**.
-- Single decision-model vendor (Jev via OpenRouter).
-- Finite n — always show Wilson 95% CIs, not bare percentages.
-- Thresholds must be frozen from **train** before citing **test** numbers.
-- Do not retune Part II thresholds (0.70 / 0.6) from real-cohort n.
+Read these before citing numbers (LinkedIn, README tables, or elsewhere):
+
+- **Synthetic primary bench.** The headline eval uses diverse paraphrases plus
+  hard/adversarial families. It is not production Razorpay traffic. The real
+  test-mode cohort above is a secondary API-shape check, not a benchmark.
+- **Single decision-model vendor.** Jev runs through OpenRouter. Results are
+  vendor- and version-specific (`typesafe/jev-1.14` in the sample report).
+- **Finite n.** Always publish Wilson 95% CIs with point estimates. Do not lead
+  with bare percentages.
+- **Train before test.** Freeze confidence/policy thresholds on `--split train`
+  (see `--train-sweep`). Only then cite `--split test`. Do not retune from test.
+- **Do not fit the small real cohort.** Keep policy defaults frozen
+  (`MIN_CONFIDENCE=0.6`, Noul/dispute/transient signal threshold `0.70`). Do not
+  retune those from real-cohort n (~30–50).
 
 ## Tech stack
 
