@@ -88,6 +88,76 @@ def detect() -> None:
 
 
 @app.command()
+def realgen(
+    scenarios: Annotated[
+        str,
+        typer.Option(
+            "--scenarios",
+            help="all | comma list of scenario keys (see plan §23)",
+        ),
+    ] = "all",
+    repeat: Annotated[
+        int,
+        typer.Option("--repeat", help="Links per scenario (max 5)"),
+    ] = 2,
+    cohort: Annotated[
+        str,
+        typer.Option("--cohort", help="Cohort tag written into notes.pr_cohort"),
+    ] = "real-v1",
+    amount_max: Annotated[
+        int,
+        typer.Option(
+            "--amount-max",
+            help="Amount in rupees (kept under ₹5,000 escalate cap)",
+        ),
+    ] = 2499,
+    output_dir: Annotated[
+        Path,
+        typer.Option("--output-dir", help="Directory for realgen_<cohort>.json"),
+    ] = Path("data/real"),
+) -> None:
+    """Create test-mode Payment Links for the real cohort (manual pay → Failure)."""
+    from payrecover.realgen import (
+        RealgenError,
+        format_checklist,
+        generate_links,
+        parse_scenarios,
+        write_manifest,
+    )
+
+    settings = _settings()
+    if not settings.razorpay_key_id.startswith("rzp_test_"):
+        typer.echo("refusing non-test Razorpay key", err=True)
+        raise typer.Exit(code=1)
+    try:
+        selected = parse_scenarios(scenarios)
+        client = RazorpayClient(settings)
+        links = generate_links(
+            client,
+            scenarios=selected,
+            repeat=repeat,
+            cohort=cohort,
+            amount_max_rupees=amount_max,
+        )
+    except RealgenError as exc:
+        typer.echo(str(exc), err=True)
+        raise typer.Exit(code=1) from None
+    except RazorpayAuthError as exc:
+        typer.echo(f"auth failed: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+    except RazorpayClientError as exc:
+        typer.echo(f"razorpay error: {exc.__class__.__name__}: {exc}", err=True)
+        raise typer.Exit(code=1) from None
+
+    manifest = write_manifest(output_dir / f"realgen_{cohort}.json", links)
+    typer.echo(format_checklist(links))
+    typer.echo(
+        f"ok  realgen created {len(links)} links  cohort={cohort}  "
+        f"manifest={manifest}"
+    )
+
+
+@app.command()
 def seed(
     seed: int = typer.Option(42, "--seed", help="Deterministic batch seed"),
     force: bool = typer.Option(False, "--force", help="Wipe existing cases and reseed"),

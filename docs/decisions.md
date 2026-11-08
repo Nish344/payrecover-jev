@@ -394,3 +394,14 @@ implementation above. C1–C3 remain disclose-only; C4 was implemented in
 - Guardrail: do not guess UPI/netbanking/wallet/`short_otp` reasons — add only from
   observed detect output in a later decisions entry.
 - Next: C2 `payrecover realgen` (Payment Link writes, no model credits).
+
+---
+
+## 2026-11-08 (Part III — C2: realgen)
+
+- Decided: scenario links via existing `create_payment_link` (test-mode only); paying
+  is manual on the mock bank page. No S2S create-payment; Playwright is stretch.
+- Built: `payrecover realgen` + `realgen.py` — notes tags `pr_cohort` / `pr_scenario` /
+  `pr_label`, checklist + `data/real/realgen_<cohort>.json`, refuses live keys and
+  `--repeat > 5`, never calls notify.
+- Next: C3 detect upgrade; discovery step 1 for UPI/netbanking/wallet/short_otp.
