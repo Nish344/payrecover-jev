@@ -147,8 +147,6 @@ never count toward accuracy.
 
 ## Limitations
 
-Read these before citing numbers (LinkedIn, README tables, or elsewhere):
-
 - **Synthetic primary bench.** The headline eval uses diverse paraphrases plus
   hard/adversarial families. It is not production Razorpay traffic. The real
   test-mode cohort above is a secondary API-shape check, not a benchmark.
