@@ -506,3 +506,18 @@ Manual pay of discovery links (`cohort=real-v1`, repeat 1). Detected 3 failures.
 - Manifest: `data/real/realgen_real-v2.json` (18 links; mixed real-v2/real-v3).
 - After manual pay: `detect --since 1d --export-fixtures` (no single cohort filter;
   notes carry `pr_cohort`). Skip UPI.
+
+---
+
+## 2026-11-08 (Part III — C3 step 2 pay results)
+
+- Skipped remaining link: `international_transaction_not_allowed` #2
+  (`https://rzp.io/rzp/KEw7g7f`) — one intl failure already recorded.
+- **Critical observation:** most documented scenario cards returned generic
+  `error_reason=payment_failed` (source=`gateway`), **not** the catalogue reasons
+  (`insufficient_fund`, `authentication_failed`, `payment_timed_out`, …). Only
+  true intl card reliably emitted `international_transaction_not_allowed`.
+- Labels still come from `notes.pr_label` (generated). Accuracy on this cohort is
+  therefore “did diagnosis recover the tagged scenario label?”, not “did Razorpay
+  emit the documented reason.”
+- Proceeding to C4 with observed payloads + fixture expected-verdict matrix.

@@ -23,7 +23,7 @@ app = typer.Typer(name="payrecover", no_args_is_help=True, add_completion=False)
 _REPORTS_DIR = Path("reports")
 DiagnosisChoice = Literal["auto", "rules", "jev", "gemini", "keyword"]
 SeedProfile = Literal["classic", "jev", "bench"]
-EvalSplit = Literal["all", "train", "test"]
+EvalSplit = Literal["all", "train", "test", "real"]
 
 
 @app.callback()
@@ -369,7 +369,7 @@ def eval_cmd(
     ] = "rules,keyword,jev,gemini",
     split: Annotated[
         EvalSplit,
-        typer.Option("--split", help="Evaluate all | train | test (prefer test)"),
+        typer.Option("--split", help="Evaluate all | train | test | real"),
     ] = "test",
     output: Annotated[
         Path | None,
@@ -387,9 +387,22 @@ def eval_cmd(
         bool,
         typer.Option("--train-sweep", help="Append train-only confidence threshold sweep"),
     ] = False,
+    mask_reason: Annotated[
+        bool,
+        typer.Option(
+            "--mask-reason",
+            help="Blank error_reason before diagnosis (real-cohort reading test)",
+        ),
+    ] = False,
 ) -> None:
     """Compare diagnosis arms on the held-out split (fair baseline ladder)."""
-    from payrecover.eval import Arm, evaluate_arms, format_eval_report, predictions_for_arm
+    from payrecover.eval import (
+        Arm,
+        evaluate_arms,
+        format_eval_report,
+        format_real_report,
+        predictions_for_arm,
+    )
     from payrecover.jev_client import JevAuthError, JevClient
 
     settings = _settings()
@@ -415,6 +428,7 @@ def eval_cmd(
         except JevAuthError as exc:
             typer.echo(f"jev auth failed: {exc}", err=True)
             raise typer.Exit(code=1) from None
+    masked_results = None
     try:
         results = evaluate_arms(
             store,
@@ -424,7 +438,21 @@ def eval_cmd(
             jev_client=jev_client,
             cache_dir=None if no_cache else cache_dir,
             use_cache=not no_cache,
+            mask_reason=mask_reason,
         )
+        if split == "real" and not mask_reason:
+            # Include reason-masked section in the real report (model arms only in plan's
+            # masked file; here we compute all selected arms for one report).
+            masked_results = evaluate_arms(
+                store,
+                settings=settings,
+                arms=selected,
+                split=split,
+                jev_client=jev_client,
+                cache_dir=None if no_cache else cache_dir,
+                use_cache=not no_cache,
+                mask_reason=True,
+            )
         train_preds = None
         sweep_arm: Arm | None = None
         if train_sweep and "jev" in selected:
@@ -442,11 +470,14 @@ def eval_cmd(
     finally:
         if jev_client is not None:
             jev_client.close()
-    text = format_eval_report(
-        results,
-        train_sweep_arm=sweep_arm,
-        train_predictions=train_preds,
-    )
+    if split == "real":
+        text = format_real_report(results, masked_results=masked_results)
+    else:
+        text = format_eval_report(
+            results,
+            train_sweep_arm=sweep_arm,
+            train_predictions=train_preds,
+        )
     if output is not None:
         output.parent.mkdir(parents=True, exist_ok=True)
         output.write_text(text + "\n", encoding="utf-8")

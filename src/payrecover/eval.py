@@ -20,12 +20,27 @@ from payrecover.calibration import (
 from payrecover.config import Settings
 from payrecover.diagnosis import DiagnosisMode, diagnose
 from payrecover.jev_client import JevClient
-from payrecover.models import Case, Diagnosis, DiagnosisPath, GroundTruth
+from payrecover.models import ActionType, Case, Diagnosis, DiagnosisPath, GroundTruth
+from payrecover.policy import decide
+from payrecover.razorpay_reasons import lookup_reason
 from payrecover.stats import wilson_ci
 from payrecover.store import Store
 
 Arm = Literal["rules", "keyword", "jev", "gemini"]
-SplitFilter = Literal["all", "train", "test"]
+SplitFilter = Literal["all", "train", "test", "real"]
+
+# Expected policy verdicts for documented Razorpay raw_reasons (C4 matrix; C5 flips cancelled).
+EXPECTED_VERDICTS: dict[str, ActionType] = {
+    "insufficient_fund": ActionType.ISSUE_LINK,
+    "international_transaction_not_allowed": ActionType.ISSUE_LINK,
+    "authentication_failed": ActionType.ISSUE_LINK,
+    "payment_timed_out": ActionType.WAIT,
+    "gateway_technical_error": ActionType.WAIT,
+    "card_declined": ActionType.ESCALATE,
+    "card_disabled_for_online_payments": ActionType.ESCALATE,
+    "card_number_invalid": ActionType.ESCALATE,
+    "payment_cancelled": ActionType.ESCALATE,  # becomes ISSUE_LINK after C5
+}
 
 
 @dataclass(frozen=True)
@@ -41,6 +56,9 @@ class CasePrediction:
     cost_usd: float | None
     signals: dict[str, float] | None
     correct: bool | None
+    raw_reason: str | None = None
+    label_source: str | None = None
+    policy_verdict: str | None = None
 
 
 @dataclass(frozen=True)
@@ -102,6 +120,7 @@ def evaluate_arms(
     jev_client: JevClient | None = None,
     cache_dir: Path | None = None,
     use_cache: bool = True,
+    mask_reason: bool = False,
 ) -> list[ArmResult]:
     selected = arms or ["rules", "keyword", "jev", "gemini"]
     cases = store.list_cases()
@@ -118,6 +137,7 @@ def evaluate_arms(
                 split=split,
                 jev_client=jev_client,
                 cache=cache if use_cache else None,
+                mask_reason=mask_reason,
             )
         )
     return results
@@ -132,6 +152,7 @@ def _evaluate_arm(
     split: SplitFilter,
     jev_client: JevClient | None,
     cache: ResponseCache | None,
+    mask_reason: bool = False,
 ) -> ArmResult:
     mode: DiagnosisMode = arm
     labeled = 0
@@ -148,20 +169,30 @@ def _evaluate_arm(
         if split != "all":
             if truth is None or truth.split != split:
                 continue
+        subject = _maybe_mask_reason(case) if mask_reason else case
         diagnosis = _diagnose_cached(
-            case,
+            subject,
             settings=settings,
             mode=mode,
             arm=arm,
             jev_client=jev_client,
             cache=cache,
+            mask_reason=mask_reason,
         )
         path_counts[diagnosis.path.value] += 1
         if diagnosis.cost_usd is not None:
             cost += float(diagnosis.cost_usd)
 
+        action = decide(subject, diagnosis, kill_switch=settings.kill_switch)
         is_correct: bool | None = None
-        if truth is not None and truth.true_cause is not None:
+        # Headline accuracy excludes derived labels (circular for rules on real data).
+        counts_for_accuracy = (
+            truth is not None
+            and truth.true_cause is not None
+            and (split != "real" or truth.label_source in {"generated", "manual"})
+        )
+        if counts_for_accuracy:
+            assert truth is not None and truth.true_cause is not None
             labeled += 1
             expected = truth.true_cause
             row = by_cause.setdefault(expected, {"labeled": 0, "correct": 0})
@@ -183,6 +214,8 @@ def _evaluate_arm(
                     family=truth.family,
                 )
             )
+        elif truth is not None and truth.true_cause is not None:
+            is_correct = diagnosis.cause == truth.true_cause
         predictions.append(
             CasePrediction(
                 case_id=case.case_id,
@@ -196,6 +229,13 @@ def _evaluate_arm(
                 cost_usd=diagnosis.cost_usd,
                 signals=diagnosis.signals,
                 correct=is_correct,
+                raw_reason=(
+                    None
+                    if truth is None
+                    else (truth.raw_reason if truth.raw_reason is not None else case.failure.error_reason)
+                ),
+                label_source=None if truth is None else truth.label_source,
+                policy_verdict=action.action_type.value,
             )
         )
 
@@ -222,6 +262,12 @@ def _evaluate_arm(
     )
 
 
+def _maybe_mask_reason(case: Case) -> Case:
+    return case.model_copy(
+        update={"failure": case.failure.model_copy(update={"error_reason": ""})}
+    )
+
+
 def _diagnose_cached(
     case: Case,
     *,
@@ -230,12 +276,13 @@ def _diagnose_cached(
     arm: Arm,
     jev_client: JevClient | None,
     cache: ResponseCache | None,
+    mask_reason: bool = False,
 ) -> Diagnosis:
     if cache is None or arm in {"rules", "keyword"}:
         return diagnose(case, settings=settings, mode=mode, jev_client=jev_client)
 
     model_name = settings.jev_model if arm == "jev" else settings.llm_model
-    key = _cache_key(case, arm=arm, model=model_name)
+    key = _cache_key(case, arm=arm, model=model_name, mask_reason=mask_reason)
     hit = cache.get(key)
     if hit is not None:
         return Diagnosis(
@@ -266,10 +313,18 @@ def _diagnose_cached(
     return diagnosis
 
 
-def _cache_key(case: Case, *, arm: Arm, model: str) -> str:
+def _cache_key(case: Case, *, arm: Arm, model: str, mask_reason: bool = False) -> str:
     failure = case.failure.model_dump()
-    blob = json.dumps({"arm": arm, "model": model, "failure": failure}, sort_keys=True)
+    blob = json.dumps(
+        {"arm": arm, "model": model, "failure": failure, "mask_reason": mask_reason},
+        sort_keys=True,
+    )
     return blob
+
+
+def expected_verdict_for_reason(raw_reason: str | None) -> ActionType | None:
+    key = (raw_reason or "").strip().lower()
+    return EXPECTED_VERDICTS.get(key)
 
 
 def format_eval_report(
@@ -440,6 +495,117 @@ def predictions_for_arm(result: ArmResult) -> list[Prediction]:
         for p in result.predictions
         if p.true_cause is not None
     ]
+
+
+def format_real_report(
+    results: list[ArmResult],
+    *,
+    masked_results: list[ArmResult] | None = None,
+) -> str:
+    """Real-cohort report. Never merge these numbers into the synthetic headline table."""
+    lines = [
+        "# PayRecover real Razorpay cohort eval",
+        "",
+        "> **Not a benchmark.** Test-mode descriptions are one fixed string per reason, "
+        "n is small, CIs are wide, and for card scenarios the label is often determined "
+        "by which test card / notes tag was used. This validates API shape and taxonomy "
+        "gaps — see plan §22.",
+        "",
+        "## 1. In-taxonomy accuracy",
+        "",
+        "Only `label_source ∈ {generated, manual}`. Derived labels excluded. n + Wilson CI.",
+        "",
+        "| arm | n | accuracy | 95% CI |",
+        "|---|---|---|---|",
+    ]
+    for result in results:
+        ci = f"[{result.accuracy_ci_low:.2%}, {result.accuracy_ci_high:.2%}]"
+        lines.append(
+            f"| {result.arm} | {result.labeled} | {result.accuracy:.2%} | {ci} |"
+        )
+    lines.extend(["", "## 2. Out-of-taxonomy abstention", ""])
+    lines.append(
+        "Rows whose structured `raw_reason` has `kind=out_of_taxonomy`. "
+        "`abstain_rate` = predicted `ambiguous`. Lower mean confidence is better here."
+    )
+    lines.append("")
+    lines.append("| arm | n | abstain_rate | mean_confidence |")
+    lines.append("|---|---|---|---|")
+    for result in results:
+        oot = [
+            p
+            for p in result.predictions
+            if lookup_reason(p.raw_reason).kind == "out_of_taxonomy"
+        ]
+        n = len(oot)
+        if n == 0:
+            lines.append(f"| {result.arm} | 0 | — | — |")
+            continue
+        abstain = sum(1 for p in oot if p.cause == "ambiguous") / n
+        mean_conf = sum(p.confidence for p in oot) / n
+        lines.append(
+            f"| {result.arm} | {n} | {abstain:.2%} | {mean_conf:.3f} |"
+        )
+
+    lines.extend(["", "## 3. Per-`raw_reason` table", ""])
+    lines.append("| arm | raw_reason | predicted | confidence | policy_verdict |")
+    lines.append("|---|---|---|---|---|")
+    for result in results:
+        for pred in sorted(result.predictions, key=lambda p: (p.raw_reason or "", p.case_id)):
+            lines.append(
+                f"| {result.arm} | `{pred.raw_reason or ''}` | {pred.cause} | "
+                f"{pred.confidence:.3f} | {pred.policy_verdict or '—'} |"
+            )
+
+    lines.extend(["", "## 4. Expected-verdict matrix", ""])
+    lines.append("| raw_reason | expected verdict |")
+    lines.append("|---|---|")
+    for reason, verdict in EXPECTED_VERDICTS.items():
+        note = " (→ ISSUE_LINK after C5)" if reason == "payment_cancelled" else ""
+        lines.append(f"| `{reason}` | {verdict.value}{note} |")
+
+    if masked_results:
+        lines.extend(
+            [
+                "",
+                "## 5. Reason-masked",
+                "",
+                "`error_reason` blanked before diagnosis. Rules arm is all-`ambiguous` "
+                "by construction.",
+                "",
+            ]
+        )
+        lines.append("| arm | n | accuracy | 95% CI |")
+        lines.append("|---|---|---|---|")
+        for result in masked_results:
+            ci = f"[{result.accuracy_ci_low:.2%}, {result.accuracy_ci_high:.2%}]"
+            lines.append(
+                f"| {result.arm} | {result.labeled} | {result.accuracy:.2%} | {ci} |"
+            )
+        lines.extend(["", "### Reason-masked per-`raw_reason`", ""])
+        lines.append("| arm | raw_reason | predicted | confidence | policy_verdict |")
+        lines.append("|---|---|---|---|---|")
+        for result in masked_results:
+            for pred in sorted(
+                result.predictions, key=lambda p: (p.raw_reason or "", p.case_id)
+            ):
+                lines.append(
+                    f"| {result.arm} | `{pred.raw_reason or ''}` | {pred.cause} | "
+                    f"{pred.confidence:.3f} | {pred.policy_verdict or '—'} |"
+                )
+
+    lines.extend(
+        [
+            "",
+            "## Limitations (verbatim framing)",
+            "",
+            "- Not a large labeled benchmark; test-mode strings lack paraphrase diversity.",
+            "- Real-cohort numbers must never appear in the synthetic headline table.",
+            "- Derived labels never count toward accuracy.",
+            "",
+        ]
+    )
+    return "\n".join(lines)
 
 
 def first_diagnosis_payload(diagnosis: Diagnosis) -> dict[str, object]:
