@@ -1,0 +1,48 @@
+{
+  "acquirer_data": {
+    "auth_code": null
+  },
+  "amount": 10000,
+  "amount_refunded": 0,
+  "bank": null,
+  "captured": false,
+  "card": {
+    "emi": false,
+    "entity": "card",
+    "id": "card_TxdD9bwJ0R8Usx",
+    "international": false,
+    "issuer": "UBIN",
+    "last4": "5060",
+    "network": "Visa",
+    "sub_type": "consumer",
+    "token_iin": "434658855",
+    "type": "debit"
+  },
+  "card_id": "card_TxdD9bwJ0R8Usx",
+  "created_at": 1794130066,
+  "currency": "INR",
+  "description": "#Txd8qUhYrlI6AJ",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Your payment has been cancelled. Try again or complete the payment later.",
+  "error_reason": "payment_cancelled",
+  "error_source": "customer",
+  "error_step": "payment_authentication",
+  "fee": null,
+  "id": "pay_TxdD9PSWrwziJ1",
+  "international": false,
+  "invoice_id": null,
+  "method": "card",
+  "notes": {
+    "case_id": "real_real-v1-otp2_short_otp_1",
+    "pr_cohort": "real-v1-otp2",
+    "pr_label": "discover",
+    "pr_scenario": "short_otp"
+  },
+  "order_id": "order_Txd9H2g9ZRqaw2",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "vpa": null,
+  "wallet": null
+}

@@ -466,11 +466,30 @@ Manual pay of discovery links (`cohort=real-v1`, repeat 1). Detected 3 failures.
    Short OTP is Checkout **client-side validation** — it does **not** mint a failed
    `pay_*` object, so `detect` correctly ignores it. **Do not invent an
    `error_reason` for short_otp.**
-4. To observe an API-level OTP failure, retry with a **full-length wrong OTP**
-   (4–10 digits, incorrect) — expect something like `authentication_failed` /
-   `invalid_otp` if Razorpay emits one.
+4. Full-length OTP retries on cohort `real-v1-otp2` (2026-11-08):
+   - `pay_TxdD9PSWrwziJ1` **failed**:
+     - error_reason=`payment_cancelled`
+     - error_code=`BAD_REQUEST_ERROR`
+     - error_source=`customer`
+     - error_step=`payment_authentication`
+     - error_description=`Your payment has been cancelled. Try again or complete the payment later.`
+     - card last4=`5060`, international=`false`
+   - **Not** `authentication_failed` / `invalid_otp`. No new catalogue row — 
+     `payment_cancelled` already mapped (`ambiguous` / out_of_taxonomy; C5 →
+     `customer_abandoned`).
+   - `pay_TxdDd3DQ7WikeT` **captured** (success) on the same link — OTP discovery
+     also produced a paid payment; ignore for failure taxonomy.
+   - Original `pay_TxdAH7484uAw8B` remained `created` (short-OTP UI-only path).
+
+### Discovery summary (do not guess further)
+| scenario | API outcome |
+|---|---|
+| UPI | method not offered |
+| netbanking / wallet | `payment_failed` |
+| short OTP (<4 digits) | UI only; payment stays `created` |
+| wrong/abandoned OTP auth | `payment_cancelled` @ `payment_authentication` |
 
 ### Next
-- Optional: same link https://rzp.io/rzp/h4KRa5E → domestic card → enter a **wrong
-  full-length OTP** (e.g. `0000` or `1234`) → confirm UI failure → then detect.
-- Then C3 step 2 full `realgen --scenarios all --repeat 2` → pay → detect → C4.
+- C3 step 2: full `realgen --scenarios all --repeat 2` → pay documented card
+  scenarios → `detect --since 1d --cohort real-v1 --export-fixtures` → C4.
+  Skip UPI until the account exposes it.
