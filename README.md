@@ -102,23 +102,7 @@ payrecover consistency --arm jev --split test --runs 5 --limit 20 \
 
 ## Architecture
 
-```
-                 ┌────────────────────────────────────────────────┐
-                 │                  runner (orchestrator)          │
-                 └────────────────────────────────────────────────┘
-   batchgen ──▶ detector ──▶ diagnosis ──▶ policy ──▶ actions ──▶ Razorpay test API
- (classic /       (failed     (rules /     (gates,     (link /
-  jev / bench      payments)   keyword /    caps,       remind /
-  + labels +                   Jev /        signals)    wait /
-  train/test)                  Gemini)                  escalate /
-                                                        stop)
-        │                          │            │          │
-        └──────────────────────────┴─────┬──────┴──────────┘
-                                         ▼
-                              audit + eval cache (append-only / reports/cache)
-                                         ▼
-                              metrics / calibration ──▶ reports/
-```
+![Runner orchestrates batchgen, detector, diagnosis, policy, and actions into the Razorpay test API. Audit and the eval cache feed metrics and reports.](docs/architecture.jpg)
 
 ### Baseline ladder (eval arms)
 
