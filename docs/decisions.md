@@ -493,3 +493,16 @@ Manual pay of discovery links (`cohort=real-v1`, repeat 1). Detected 3 failures.
 - C3 step 2: full `realgen --scenarios all --repeat 2` → pay documented card
   scenarios → `detect --since 1d --cohort real-v1 --export-fixtures` → C4.
   Skip UPI until the account exposes it.
+
+---
+
+## 2026-11-08 (Part III — C3 step 2 link gen)
+
+- Documented card scenarios ×2 generated despite Razorpay `Too many requests`.
+- `payment_link.all` listing returned empty on this account; recovered URLs from
+  create responses. Phantom `reference_id already exists` for some `real-v2_*`
+  rows that listing could not fetch → filled gaps under cohort **`real-v3`**
+  (`insufficient_fund`×2, `authentication_failed`×2, `payment_timed_out`×1).
+- Manifest: `data/real/realgen_real-v2.json` (18 links; mixed real-v2/real-v3).
+- After manual pay: `detect --since 1d --export-fixtures` (no single cohort filter;
+  notes carry `pr_cohort`). Skip UPI.
