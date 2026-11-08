@@ -17,7 +17,7 @@ _DOCUMENTED = {
         "international_transaction_not_allowed",
         "exact",
     ),
-    "payment_cancelled": ("ambiguous", "out_of_taxonomy"),
+    "payment_cancelled": ("customer_abandoned", "alias"),
     "card_declined": ("ambiguous", "out_of_taxonomy"),
     "card_disabled_for_online_payments": ("ambiguous", "out_of_taxonomy"),
     "card_number_invalid": ("ambiguous", "out_of_taxonomy"),

@@ -73,9 +73,14 @@ RAZORPAY_REASONS: dict[str, ReasonInfo] = {
         is_transient=True,
     ),
     "payment_cancelled": ReasonInfo(
-        cause="ambiguous",
-        kind="out_of_taxonomy",
-        confidence=None,
+        cause="customer_abandoned",
+        kind="alias",
+        confidence=0.85,
+    ),
+    "customer_abandoned": ReasonInfo(
+        cause="customer_abandoned",
+        kind="exact",
+        confidence=0.85,
     ),
     "card_declined": ReasonInfo(
         cause="ambiguous",

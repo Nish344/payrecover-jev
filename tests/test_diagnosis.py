@@ -216,6 +216,17 @@ def test_description_minted_bank_downtime_still_blocked(monkeypatch: pytest.Monk
     assert diagnosis.cause == "ambiguous"
 
 
+def test_payment_cancelled_rules_to_customer_abandoned() -> None:
+    diagnosis = diagnose(
+        _case("payment_cancelled"),
+        settings=make_settings(),
+        mode="rules",
+    )
+    assert diagnosis.path == DiagnosisPath.RULES
+    assert diagnosis.cause == "customer_abandoned"
+    assert diagnosis.confidence == 0.85
+
+
 def test_payment_timed_out_plus_jev_transient_keeps_transient() -> None:
     fake = FakeJev(
         default_jev_decision(

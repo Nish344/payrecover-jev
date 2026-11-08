@@ -39,7 +39,7 @@ EXPECTED_VERDICTS: dict[str, ActionType] = {
     "card_declined": ActionType.ESCALATE,
     "card_disabled_for_online_payments": ActionType.ESCALATE,
     "card_number_invalid": ActionType.ESCALATE,
-    "payment_cancelled": ActionType.ESCALATE,  # becomes ISSUE_LINK after C5
+    "payment_cancelled": ActionType.ISSUE_LINK,  # C5: customer_abandoned
 }
 
 
@@ -561,8 +561,7 @@ def format_real_report(
     lines.append("| raw_reason | expected verdict |")
     lines.append("|---|---|")
     for reason, verdict in EXPECTED_VERDICTS.items():
-        note = " (→ ISSUE_LINK after C5)" if reason == "payment_cancelled" else ""
-        lines.append(f"| `{reason}` | {verdict.value}{note} |")
+        lines.append(f"| `{reason}` | {verdict.value} |")
 
     if masked_results:
         lines.extend(

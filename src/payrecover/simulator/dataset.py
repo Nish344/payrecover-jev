@@ -27,6 +27,7 @@ CAUSES = (
     "invalid_otp",
     "incorrect_pin",
     "international_transaction_not_allowed",
+    "customer_abandoned",
     "ambiguous",
 )
 
@@ -177,6 +178,27 @@ _INTERNATIONAL = (
     "International transaction not allowed for this account.",
 )
 
+_CUSTOMER_ABANDONED = (
+    "Customer cancelled the payment on the checkout page.",
+    "User abandoned the payment link before entering card details.",
+    "Checkout was closed by the customer mid-flow.",
+    "Payment cancelled: shopper exited before authentication.",
+    "User dropped out of checkout after selecting the card method.",
+    "Customer left the payment page without completing the charge.",
+    "Session ended because the buyer closed the checkout window.",
+    "Payment has been cancelled by the customer.",
+    "Shopper abandoned UPI collect before approving on the bank app.",
+    "User exited checkout after the order summary screen.",
+    "Customer cancelled before OTP; no authorization was attempted.",
+    "Buyer closed the Razorpay checkout modal voluntarily.",
+    "Payment cancelled — customer chose a different payment method later.",
+    "Checkout abandoned: user navigated away from the payment link.",
+    "Customer dropped the session after opening the payment link.",
+    "User cancelled on the mock bank page before confirming.",
+    "Payment not completed; customer abandoned the flow.",
+    "Shopper closed checkout without finishing card entry.",
+)
+
 _AMBIGUOUS = (
     "Payment could not be completed. Please try again.",
     "Transaction failed due to an unknown error.",
@@ -323,6 +345,8 @@ def _meta_for_cause(cause: str) -> tuple[str, str, str, bool | None]:
         return "card", "GATEWAY_ERROR", "issuer", False
     if cause == "insufficient_funds":
         return "card", "GATEWAY_ERROR", "bank", False
+    if cause == "customer_abandoned":
+        return "card", "BAD_REQUEST_ERROR", "customer", False
     return "card", "BAD_REQUEST_ERROR", "unknown", False
 
 
@@ -396,6 +420,8 @@ def build_specs() -> list[Spec]:
         specs.append(_unmapped("incorrect_pin", text))
     for text in _INTERNATIONAL:
         specs.append(_unmapped("international_transaction_not_allowed", text))
+    for text in _CUSTOMER_ABANDONED:
+        specs.append(_unmapped("customer_abandoned", text))
     for text in _AMBIGUOUS:
         specs.append(_unmapped("ambiguous", text))
 
@@ -407,9 +433,25 @@ def build_specs() -> list[Spec]:
         ("invalid_otp", _INVALID_OTP[:8]),
         ("incorrect_pin", _INCORRECT_PIN[:8]),
         ("international_transaction_not_allowed", _INTERNATIONAL[:8]),
+        ("customer_abandoned", _CUSTOMER_ABANDONED[:15]),
     ):
         for text in bucket:
             specs.append(_clean(cause, text))
+    # Clean rows keyed by Razorpay's payment_cancelled reason (alias → customer_abandoned)
+    for text in _CUSTOMER_ABANDONED[15:]:
+        specs.append(
+            Spec(
+                true_cause="customer_abandoned",
+                family="clean",
+                description=text,
+                error_reason="payment_cancelled",
+                method="card",
+                error_code="BAD_REQUEST_ERROR",
+                error_source="customer",
+                expect_is_transient=False,
+                expect_customer_fault=False,
+            )
+        )
 
     # Hard ambiguous already covered in unmapped ambiguous; add more clean-empty
     for text in _AMBIGUOUS:  # all generic unknowns are hard_ambiguous as well as unmapped

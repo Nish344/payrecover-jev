@@ -59,7 +59,7 @@ SCENARIOS: dict[str, ScenarioSpec] = {
     ),
     "payment_cancelled": ScenarioSpec(
         key="payment_cancelled",
-        pr_label="ambiguous",
+        pr_label="customer_abandoned",
         cards="4100 2800 0007 0002 / 5305 6200 0004 0002",
         how_to_fail="Open link → pay with card → mock bank page → Failure",
     ),

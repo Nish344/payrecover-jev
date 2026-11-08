@@ -10,8 +10,8 @@ Built on top of the frozen v1 slice from
 This tree adds [Jev](https://docs.typesafe.ai/introduction) (TypeSafe System One)
 for calibrated, typed diagnosis — and a fair eval so the claim is defensible.
 
-See [`plan.md`](plan.md) for the full plan (Part I migration + Part II bulletproofing)
-and [`docs/decisions.md`](docs/decisions.md) for the decision log.
+See [`plan.md`](plan.md) for the full plan (Parts I–III) and
+[`docs/decisions.md`](docs/decisions.md) for the decision log.
 
 ## What this claims (and what it doesn't)
 
@@ -60,11 +60,12 @@ payrecover consistency --arm jev --split test --runs 5 --limit 20 \
 | Command | What it does |
 |---|---|
 | `payrecover ping` | Authenticated test-mode Razorpay read |
-| `payrecover detect` | Read-only ingest of failed payments |
-| `payrecover seed --profile classic\|jev\|bench` | Synthetic cases (`bench` = held-out corpus) |
+| `payrecover detect [--since 1d] [--cohort …] [--export-fixtures]` | Read-only ingest of failed payments |
+| `payrecover realgen` | Create test-mode Payment Links for the real cohort |
+| `payrecover seed --profile classic\|jev\|bench` | Synthetic cases (`bench` = held-out corpus; `--keep-real` default) |
 | `payrecover dataset-info` | Corpus size / family / split summary |
 | `payrecover run [--diagnosis auto\|rules\|keyword\|jev\|gemini]` | Recover batch (dry-run default) |
-| `payrecover eval --arms … --split test` | Fair A/B + ECE + Wilson CIs (+ optional train sweep) |
+| `payrecover eval --arms … --split test\|real` | Fair A/B (+ `--mask-reason` for real) |
 | `payrecover consistency --arm jev` | Self-consistency (N runs, no cache) |
 | `payrecover report` | Recovery metrics |
 | `payrecover audit <case-id>` | Append-only trail |
@@ -108,13 +109,37 @@ Tune thresholds on **`--split train`** (see `--train-sweep`); publish **`--split
    corroboration (`is_transient` strong + `customer_fault` low).
 5. Response cache under `reports/cache/` makes eval reruns free and reproducible.
 
+## Real Razorpay test-mode cohort
+
+Reproduce the API-shape check in ~15 minutes (test keys only):
+
+```bash
+payrecover realgen --scenarios all --repeat 2 --cohort real-v1 --amount-max 100
+# Pay each link on Checkout: listed test card → mock bank page → Failure
+payrecover detect --since 1d --export-fixtures
+payrecover eval --split real --arms rules,keyword,jev,gemini --output reports/eval_real.md
+```
+
+**What it validates:** real `pay_*` objects through `detector → diagnosis → policy`,
+Razorpay `error_reason` vocabulary gaps (e.g. singular `insufficient_fund`, generic
+`payment_failed`), and whether arms abstain on out-of-taxonomy reasons.
+
+**What it is not:** a large labeled benchmark. Test-mode descriptions are one fixed
+string per reason (zero paraphrase diversity), n will be ~30–50, CIs will be wide, and
+for card scenarios the label is often determined by which test card / notes tag was
+used — so rules accuracy on tagged reasons can be tautological. Say all of this in the
+report. Real-cohort numbers never go in the synthetic headline table; `derived` labels
+never count toward accuracy.
+
 ## Limitations (read before posting)
 
 - Dataset is **synthetic** (diverse paraphrases + hard/adversarial families), not
-  production Razorpay logs.
+  production Razorpay logs. The real cohort above is a secondary API-shape check —
+  **not a benchmark**.
 - Single decision-model vendor (Jev via OpenRouter).
 - Finite n — always show Wilson 95% CIs, not bare percentages.
 - Thresholds must be frozen from **train** before citing **test** numbers.
+- Do not retune Part II thresholds (0.70 / 0.6) from real-cohort n.
 
 ## Tech stack
 

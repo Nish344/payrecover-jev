@@ -521,3 +521,18 @@ Manual pay of discovery links (`cohort=real-v1`, repeat 1). Detected 3 failures.
   therefore “did diagnosis recover the tagged scenario label?”, not “did Razorpay
   emit the documented reason.”
 - Proceeding to C4 with observed payloads + fixture expected-verdict matrix.
+
+---
+
+## 2026-11-08 (Part III — C5 customer_abandoned + C6 writeup)
+
+- Decided: `payment_cancelled` → first-class cause `customer_abandoned` (rules 0.85,
+  keyword cancel/abandon patterns, Jev Choice option). Policy: plain ISSUE_LINK (not
+  transient; customer_fault irrelevant). Expected-verdict matrix row flips to ISSUE_LINK.
+- Bench grows with ≥15 clean + unmapped paraphrases; corpus now **n=276**
+  (train 110 / test 166) via `dataset-info`.
+- Part III findings locked for writeup: no public per-tx dataset; taxonomy gaps
+  (`insufficient_fund`, transient reasons escalating before C1, `payment_cancelled`
+  escalating before C5); discovery (`payment_failed` for netbanking/wallet; short OTP
+  UI-only; OTP auth → `payment_cancelled`); label precedence generated > manual >
+  derived; derived excluded from accuracy.

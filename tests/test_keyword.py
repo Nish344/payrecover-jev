@@ -41,6 +41,16 @@ def test_keyword_dispute_escalates_to_ambiguous() -> None:
     assert diagnosis.signals["requests_dispute"] >= 0.7
 
 
+def test_keyword_matches_customer_abandoned() -> None:
+    diagnosis = diagnose(
+        _case("", "Customer cancelled the payment on the checkout page."),
+        settings=make_settings(),
+        mode="keyword",
+    )
+    assert diagnosis.cause == "customer_abandoned"
+    assert diagnosis.path.value == "keyword"
+
+
 def test_keyword_no_match_is_ambiguous() -> None:
     diagnosis = diagnose(
         _case("Payment could not be completed. Please try again."),

@@ -44,7 +44,7 @@ def _payload(raw_reason: str, **extra: object) -> dict:
                 "card_declined": "ambiguous",
                 "card_disabled_for_online_payments": "ambiguous",
                 "card_number_invalid": "ambiguous",
-                "payment_cancelled": "ambiguous",
+                "payment_cancelled": "customer_abandoned",
             }.get(raw_reason, "ambiguous"),
         },
     }

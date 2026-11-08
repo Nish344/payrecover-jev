@@ -32,6 +32,10 @@ CAUSE_OPTIONS: dict[str, str] = {
     ),
     "invalid_otp": "Customer authentication failed because of an incorrect OTP.",
     "incorrect_pin": "Customer authentication failed because of an incorrect PIN.",
+    "customer_abandoned": (
+        "Customer left, cancelled, or closed checkout before completing payment. "
+        "Not a bank decline; a recovery payment link is appropriate."
+    ),
     "ambiguous": (
         "Cause cannot be classified, or the text is a refund/chargeback/dispute request "
         "rather than a clear payment failure reason."

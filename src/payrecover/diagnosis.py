@@ -58,6 +58,11 @@ _RULES: dict[str, tuple[str, float, str]] = {
         0.90,
         "Customer authentication failed (PIN).",
     ),
+    "customer_abandoned": (
+        "customer_abandoned",
+        0.85,
+        "Customer left or cancelled checkout before completing payment.",
+    ),
 }
 
 _JSON_BLOCK = re.compile(r"\{.*\}", re.DOTALL)
@@ -133,6 +138,17 @@ _KEYWORD_PATTERNS: tuple[tuple[str, tuple[re.Pattern[str], ...]], ...] = (
             re.compile(r"cross[- ]border", re.I),
             re.compile(r"overseas\s+card", re.I),
             re.compile(r"non-INR", re.I),
+        ),
+    ),
+    (
+        "customer_abandoned",
+        (
+            re.compile(r"\bcancel(?:led|lation)?\b", re.I),
+            re.compile(r"\babandon(?:ed|s)?\b", re.I),
+            re.compile(r"closed\s+(the\s+)?checkout", re.I),
+            re.compile(r"user\s+(exited|dropped)", re.I),
+            re.compile(r"payment\s+has\s+been\s+cancelled", re.I),
+            re.compile(r"customer\s+left\s+checkout", re.I),
         ),
     ),
 )

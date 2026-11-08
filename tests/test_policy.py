@@ -136,6 +136,23 @@ def test_customer_fault_blocks_transient_signal_wait() -> None:
     assert action.action_type == ActionType.ISSUE_LINK
 
 
+def test_customer_abandoned_issues_link_not_wait() -> None:
+    case = _case(
+        failure=PaymentFailure(amount_paise=10000, error_reason="payment_cancelled")
+    )
+    diagnosis = Diagnosis(
+        case_id="c1",
+        cause="customer_abandoned",
+        confidence=0.85,
+        rationale="t",
+        path=DiagnosisPath.RULES,
+        signals={"is_transient": 0.1, "customer_fault": 0.9, "requests_dispute": 0.05},
+    )
+    action = decide(case, diagnosis, kill_switch=False)
+    assert action.action_type == ActionType.ISSUE_LINK
+    assert action.rationale == "issue_link"
+
+
 def test_corroborated_transient_waits_even_when_cause_ambiguous() -> None:
     case = _case(
         failure=PaymentFailure(amount_paise=10000, error_reason="payment_timed_out")
