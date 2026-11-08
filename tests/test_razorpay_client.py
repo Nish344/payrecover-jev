@@ -37,6 +37,20 @@ def test_refuses_live_keys() -> None:
         RazorpayClient(settings)
 
 
+def test_list_payments_passes_from_to() -> None:
+    sdk = _sdk(payment_all=[{"entity": "collection", "count": 0, "items": []}])
+    sdk.payment.all.side_effect = None
+    sdk.payment.all.return_value = {"entity": "collection", "count": 0, "items": []}
+    client = RazorpayClient(make_settings(), sdk=sdk, sleep=lambda _: None)
+    client.list_payments(count=50, skip=10, from_ts=100, to_ts=200)
+    assert sdk.payment.all.call_args.args[0] == {
+        "count": 50,
+        "skip": 10,
+        "from": 100,
+        "to": 200,
+    }
+
+
 def test_read_retries_then_succeeds() -> None:
     sleeps: list[float] = []
     sdk = _sdk(

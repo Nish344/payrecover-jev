@@ -1,0 +1,20 @@
+{
+  "amount": 5000,
+  "card": {
+    "international": false,
+    "last4": "0003",
+    "network": "MasterCard"
+  },
+  "currency": "INR",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Payment declined.",
+  "error_reason": "card_declined",
+  "error_source": "bank",
+  "error_step": "payment_authorization",
+  "id": "pay_order_notes_fallback",
+  "international": false,
+  "method": "card",
+  "notes": [],
+  "order_id": "order_with_pr_notes",
+  "status": "failed"
+}

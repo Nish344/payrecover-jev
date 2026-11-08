@@ -405,3 +405,20 @@ implementation above. C1–C3 remain disclose-only; C4 was implemented in
   `pr_label`, checklist + `data/real/realgen_<cohort>.json`, refuses live keys and
   `--repeat > 5`, never calls notify.
 - Next: C3 detect upgrade; discovery step 1 for UPI/netbanking/wallet/short_otp.
+
+---
+
+## 2026-11-08 (Part III — C3: detect + labeled real ingest)
+
+- Decided: label precedence **generated > manual > derived**; `derived` never counts
+  toward accuracy headlines. `GroundTruth.split` gains `real`; columns `raw_reason`,
+  `label_source`. `seed --force --keep-real` (default on) preserves `profile=real`.
+- Built: `detect --since/--all/--cohort/--export-fixtures`; order-notes fallback when
+  payment `notes` empty; raw payloads under `data/real/payments/`; redacted fixtures in
+  `tests/fixtures/razorpay_real/`.
+- Observed (pre-existing live payment, not discovery): `pay_TVGlLnELbwZeV2` →
+  `error_reason=international_transaction_not_allowed`, `error_source=business`,
+  `error_step=payment_initiation`, `card.international=true`, `notes=[]`.
+- Next: **discovery step 1** — `realgen` UPI/netbanking/wallet/short_otp ×1, pay manually,
+  `detect --since 1d --cohort real-v1`, paste observed reasons here before extending
+  `razorpay_reasons.py`.

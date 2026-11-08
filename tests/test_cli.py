@@ -22,7 +22,7 @@ def test_detect_ingests_failed_payments_only(
         def __init__(self, _settings: object) -> None:
             pass
 
-        def list_payments(self) -> dict[str, object]:
+        def list_payments(self, **_kwargs: object) -> dict[str, object]:
             return {
                 "count": 2,
                 "items": [
@@ -37,6 +37,10 @@ def test_detect_ingests_failed_payments_only(
             }
 
     monkeypatch.setattr("payrecover.cli.RazorpayClient", FakeClient)
+    monkeypatch.setattr(
+        "payrecover.detector.DEFAULT_RAW_DIR",
+        tmp_path / "raw",
+    )
     result = runner.invoke(app, ["detect"])
     assert result.exit_code == 0
     assert "detected 1 failed payments" in result.stdout

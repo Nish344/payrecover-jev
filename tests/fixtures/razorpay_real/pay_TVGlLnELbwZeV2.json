@@ -1,0 +1,20 @@
+{
+  "amount": 10000,
+  "card": {
+    "international": true,
+    "last4": "1881",
+    "network": "Visa"
+  },
+  "currency": "INR",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "This business accepts domestic (Indian) card payments only.",
+  "error_reason": "international_transaction_not_allowed",
+  "error_source": "business",
+  "error_step": "payment_initiation",
+  "id": "pay_TVGlLnELbwZeV2",
+  "international": true,
+  "method": "card",
+  "notes": {},
+  "order_id": "order_TVGlExample001",
+  "status": "failed"
+}

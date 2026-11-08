@@ -60,24 +60,67 @@ def ping() -> None:
 
 
 @app.command()
-def detect() -> None:
+def detect(
+    since: Annotated[
+        str | None,
+        typer.Option("--since", help="ISO timestamp or relative days like 1d"),
+    ] = None,
+    all_pages: Annotated[
+        bool,
+        typer.Option("--all", help="Paginate skip until a short page"),
+    ] = False,
+    cohort: Annotated[
+        str | None,
+        typer.Option("--cohort", help="Keep only payments with notes.pr_cohort match"),
+    ] = None,
+    export_fixtures: Annotated[
+        bool,
+        typer.Option(
+            "--export-fixtures",
+            help="Write PII-redacted copies to tests/fixtures/razorpay_real/",
+        ),
+    ] = False,
+) -> None:
     """Read failed Razorpay payments and upsert them as cases (no writes)."""
-    from payrecover.detector import ingest_failed_payments
+    from payrecover.detector import (
+        DEFAULT_RAW_DIR,
+        ingest_failed_payments,
+        list_failed_payments,
+        load_manual_labels,
+        parse_since,
+    )
 
     settings = _settings()
+    since_ts: int | None = None
+    if since is not None:
+        try:
+            since_ts = parse_since(since)
+        except ValueError as exc:
+            typer.echo(str(exc), err=True)
+            raise typer.Exit(code=1) from None
     try:
         client = RazorpayClient(settings)
-        result = client.list_payments()
+        payments = list_failed_payments(
+            client,
+            since_ts=since_ts,
+            paginate_all=all_pages,
+        )
     except RazorpayAuthError as exc:
         typer.echo(f"auth failed: {exc}", err=True)
         raise typer.Exit(code=1) from None
     except RazorpayClientError as exc:
         typer.echo(f"razorpay error: {exc.__class__.__name__}: {exc}", err=True)
         raise typer.Exit(code=1) from None
-    items = result.get("items") or []
-    payments = [item for item in items if isinstance(item, dict)]
     store = Store(settings.db_path)
-    ingested = ingest_failed_payments(store, payments)
+    ingested = ingest_failed_payments(
+        store,
+        payments,
+        cohort=cohort,
+        fetch_order=getattr(client, "fetch_order", None),
+        overrides=load_manual_labels(),
+        raw_dir=DEFAULT_RAW_DIR,
+        export_fixtures=export_fixtures,
+    )
     suffix = ""
     if ingested:
         suffix = "  " + " ".join(case.case_id for case in ingested[:20])
@@ -161,6 +204,13 @@ def realgen(
 def seed(
     seed: int = typer.Option(42, "--seed", help="Deterministic batch seed"),
     force: bool = typer.Option(False, "--force", help="Wipe existing cases and reseed"),
+    keep_real: Annotated[
+        bool,
+        typer.Option(
+            "--keep-real/--no-keep-real",
+            help="On --force, keep profile=real cases (default: keep)",
+        ),
+    ] = True,
     profile: Annotated[
         SeedProfile,
         typer.Option(
@@ -176,7 +226,7 @@ def seed(
         typer.echo(f"batch for seed={seed} already exists. Pass --force to replace.")
         return
     if force:
-        store.wipe()
+        store.wipe(keep_real=keep_real)
     batch_id = seed_batch(store, seed=seed, profile=profile)
     typer.echo(
         f"ok  seeded {store.case_count()} cases  batch_id={batch_id}  "

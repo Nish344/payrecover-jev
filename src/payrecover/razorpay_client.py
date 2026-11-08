@@ -91,8 +91,20 @@ class RazorpayClient:
     def fetch_payment(self, payment_id: str) -> Mapping[str, Any]:
         return self._read(self._sdk.payment.fetch, payment_id)
 
-    def list_payments(self, *, count: int = 100, skip: int = 0) -> Mapping[str, Any]:
-        return self._read(self._sdk.payment.all, {"count": count, "skip": skip})
+    def list_payments(
+        self,
+        *,
+        count: int = 100,
+        skip: int = 0,
+        from_ts: int | None = None,
+        to_ts: int | None = None,
+    ) -> Mapping[str, Any]:
+        params: dict[str, Any] = {"count": count, "skip": skip}
+        if from_ts is not None:
+            params["from"] = from_ts
+        if to_ts is not None:
+            params["to"] = to_ts
+        return self._read(self._sdk.payment.all, params)
 
     def fetch_payment_link(self, payment_link_id: str) -> Mapping[str, Any]:
         return self._read(self._sdk.payment_link.fetch, payment_link_id)

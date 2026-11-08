@@ -57,6 +57,8 @@ _TRUTH_COLUMNS = (
     ("expect_is_transient", "INTEGER"),
     ("expect_customer_fault", "INTEGER"),
     ("expect_requests_dispute", "INTEGER"),
+    ("raw_reason", "TEXT"),
+    ("label_source", "TEXT"),
 )
 
 
@@ -101,7 +103,24 @@ class Store:
         row = self.conn.execute("SELECT COUNT(*) AS n FROM cases").fetchone()
         return int(row["n"])
 
-    def wipe(self) -> None:
+    def wipe(self, *, keep_real: bool = False) -> None:
+        if keep_real:
+            real_ids = {
+                str(row["case_id"])
+                for row in self.conn.execute(
+                    "SELECT case_id FROM ground_truth WHERE profile = 'real'"
+                ).fetchall()
+            }
+            case_ids = {
+                str(row["case_id"])
+                for row in self.conn.execute("SELECT case_id FROM cases").fetchall()
+            }
+            for case_id in case_ids - real_ids:
+                self.conn.execute("DELETE FROM ground_truth WHERE case_id = ?", (case_id,))
+                self.conn.execute("DELETE FROM cases WHERE case_id = ?", (case_id,))
+            self.conn.execute("DELETE FROM batches")
+            self.conn.commit()
+            return
         from payrecover.audit import reset_table
 
         reset_table(self.conn)
@@ -178,9 +197,10 @@ class Store:
             """
             INSERT INTO ground_truth (
                 case_id, profile, pay_on_reminder, true_cause, family, split,
-                expect_is_transient, expect_customer_fault, expect_requests_dispute
+                expect_is_transient, expect_customer_fault, expect_requests_dispute,
+                raw_reason, label_source
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             ON CONFLICT(case_id) DO UPDATE SET
                 profile = excluded.profile,
                 pay_on_reminder = excluded.pay_on_reminder,
@@ -189,7 +209,9 @@ class Store:
                 split = excluded.split,
                 expect_is_transient = excluded.expect_is_transient,
                 expect_customer_fault = excluded.expect_customer_fault,
-                expect_requests_dispute = excluded.expect_requests_dispute
+                expect_requests_dispute = excluded.expect_requests_dispute,
+                raw_reason = excluded.raw_reason,
+                label_source = excluded.label_source
             """,
             (
                 truth.case_id,
@@ -203,6 +225,8 @@ class Store:
                 None
                 if truth.expect_requests_dispute is None
                 else int(truth.expect_requests_dispute),
+                truth.raw_reason,
+                truth.label_source,
             ),
         )
         self.conn.commit()
@@ -245,8 +269,11 @@ def _truth_from_row(row: sqlite3.Row) -> GroundTruth:
         return None if value is None else bool(value)
 
     split = _opt_str("split")
-    if split not in (None, "train", "test"):
+    if split not in (None, "train", "test", "real"):
         split = None
+    label_source = _opt_str("label_source")
+    if label_source not in (None, "generated", "manual", "derived"):
+        label_source = None
     return GroundTruth(
         case_id=str(row["case_id"]),
         profile=str(row["profile"]),
@@ -257,6 +284,8 @@ def _truth_from_row(row: sqlite3.Row) -> GroundTruth:
         expect_is_transient=_opt_bool("expect_is_transient"),
         expect_customer_fault=_opt_bool("expect_customer_fault"),
         expect_requests_dispute=_opt_bool("expect_requests_dispute"),
+        raw_reason=_opt_str("raw_reason"),
+        label_source=label_source,  # type: ignore[arg-type]
     )
 
 

@@ -164,10 +164,12 @@ class GroundTruth(BaseModel):
     pay_on_reminder: int | None = None
     true_cause: str | None = None
     family: str | None = None
-    split: Literal["train", "test"] | None = None
+    split: Literal["train", "test", "real"] | None = None
     expect_is_transient: bool | None = None
     expect_customer_fault: bool | None = None
     expect_requests_dispute: bool | None = None
+    raw_reason: str | None = None
+    label_source: Literal["generated", "manual", "derived"] | None = None
 
 
 class AuditSink(Protocol):

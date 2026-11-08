@@ -1,0 +1,24 @@
+{
+  "amount": 9900,
+  "card": {
+    "international": false,
+    "last4": "0001",
+    "network": "Visa"
+  },
+  "currency": "INR",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Payment failed due to insufficient funds.",
+  "error_reason": "insufficient_fund",
+  "error_source": "bank",
+  "error_step": "payment_authorization",
+  "id": "pay_gen_insufficient",
+  "international": false,
+  "method": "card",
+  "notes": {
+    "pr_cohort": "real-v1",
+    "pr_label": "insufficient_funds",
+    "pr_scenario": "insufficient_fund"
+  },
+  "order_id": "order_gen_insufficient",
+  "status": "failed"
+}
