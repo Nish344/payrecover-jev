@@ -1,6 +1,13 @@
 # PayRecover real Razorpay cohort eval
 
-> **Not a benchmark.** Test-mode descriptions are one fixed string per reason, n is small, CIs are wide, and for card scenarios the label is often determined by which test card / notes tag was used. This validates API shape and taxonomy gaps — see plan §22.
+> **Not a benchmark, and section 1 / section 5 accuracy is not a model score.**
+> Test mode returned generic `payment_failed` for most of these 21 payments, and
+> several `true_cause` values are scenario tags (`discover`, or `insufficient_funds`
+> / `invalid_otp` on a payload that does not say that). Every arm landing on the
+> same 57% is that labeling artifact. Read **section 3** (per-reason verdicts):
+> real `pay_*` objects ran through detect → diagnose → policy, and
+> `international_transaction_not_allowed` issues a link while generic
+> `payment_failed` escalates.
 
 ## 1. In-taxonomy accuracy
 

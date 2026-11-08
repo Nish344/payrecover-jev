@@ -394,6 +394,13 @@ def eval_cmd(
             help="Blank error_reason before diagnosis (real-cohort reading test)",
         ),
     ] = False,
+    purge_fallback_cache: Annotated[
+        bool,
+        typer.Option(
+            "--purge-fallback-cache",
+            help="Delete cache rows whose path is the rules fallback (429 poison)",
+        ),
+    ] = False,
 ) -> None:
     """Compare diagnosis arms on the held-out split (fair baseline ladder)."""
     from payrecover.eval import (
@@ -402,6 +409,7 @@ def eval_cmd(
         format_eval_report,
         format_real_report,
         predictions_for_arm,
+        purge_fallback_cache as purge_cache,
     )
     from payrecover.jev_client import JevAuthError, JevClient
 
@@ -413,6 +421,9 @@ def eval_cmd(
             err=True,
         )
         raise typer.Exit(code=1)
+    if purge_fallback_cache:
+        removed = purge_cache(cache_dir)
+        typer.echo(f"purged {removed} fallback cache rows from {cache_dir}", err=True)
     selected: list[Arm] = []
     for raw in arms.split(","):
         name = raw.strip().lower()
@@ -477,6 +488,7 @@ def eval_cmd(
             results,
             train_sweep_arm=sweep_arm,
             train_predictions=train_preds,
+            llm_model=settings.llm_model,
         )
     if output is not None:
         output.parent.mkdir(parents=True, exist_ok=True)

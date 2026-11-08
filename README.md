@@ -15,13 +15,39 @@ See [`plan.md`](plan.md) for the full plan (Parts I–III) and
 
 ## What this claims (and what it doesn't)
 
-**Claim:** On a fair, held-out, synthetic-but-diverse set, Jev matches/beats a cheap
-LLM at a fraction of the cost **and** is calibrated — fixing the exact v1 bug where
-Gemini returned `cause=ambiguous` with `confidence=0.9`.
+**Claim:** On the held-out synthetic bench (`--profile bench`, `--split test`, n=166),
+Jev is better calibrated than a cheap generative model, and its accuracy point
+estimate is higher. Numbers from `reports/sample/eval.md` (Jev `typesafe/jev-1.14`,
+comparison arm `gemini-3.5-flash-lite`):
 
-**Not claimed:** 100% accuracy on 8 hand-written sentences. That demo number was
-circular and is **not** the public headline. Prefer the bench eval (`--profile bench`,
-`--split test`) with Wilson CIs, ECE, and the baseline ladder.
+| arm | accuracy | 95% Wilson CI | ECE |
+|---|---|---|---|
+| rules | 43.37% | [36.07%, 50.98%] | 0.151 |
+| keyword | 74.10% | [66.94%, 80.16%] | 0.179 |
+| llm (gemini-3.5-flash-lite) | 80.72% | [74.05%, 86.00%] | 0.189 |
+| jev | 87.95% | [82.12%, 92.06%] | 0.059 |
+
+Jev cost on that split was $0.0055 ($0.033 / 1k cases). Self-consistency
+(`reports/sample/consistency.md`): 20 cases × 5 runs, answer-change rate 0.0,
+mean confidence std 0.0076.
+
+The calibration gap is the result that matches the v1 bug. In the 0.9–1.0
+confidence bin, Gemini is 79.5% accurate at 0.98 mean confidence (2
+high-confidence errors on `ambiguous`). Jev in the same bin is 98.5% accurate
+at 0.98 mean confidence (0 high-confidence errors on `ambiguous`).
+
+**Not claimed:**
+
+- A statistically significant accuracy win. The Jev and Gemini Wilson intervals
+  overlap, so the 88% vs 81% gap is a point estimate.
+- 100% on the old 8-sentence demo. That number was circular.
+- That Jev reads conflicting fields better. On the `conflicting` family
+  (structured `error_reason` disagrees with the description; label = description),
+  Jev is 0/11 because it trusts the structured reason. Keyword and Gemini are
+  7/11. That is the trusted-field rule, stated here so it is not a surprise in
+  the by-family table.
+- One Gemini call in this run returned HTTP 503 and was scored as the rules
+  fallback (path counts: `llm` 165, `rules` 1).
 
 ## Setup
 

@@ -447,8 +447,18 @@ def _complete_groq(api_key: str, model: str, case: Case) -> str:
                     json=payload,
                 )
                 if response.status_code == 429 and attempt < 2:
-                    logger.warning("diagnosis Groq retry attempt=%s", attempt + 1)
-                    time.sleep(2 * (attempt + 1))
+                    retry_after = response.headers.get("retry-after")
+                    try:
+                        delay = float(retry_after) if retry_after else 2 * (attempt + 1)
+                    except ValueError:
+                        delay = 2 * (attempt + 1)
+                    delay = max(delay, 2 * (attempt + 1))
+                    logger.warning(
+                        "diagnosis Groq retry attempt=%s sleep=%.1fs",
+                        attempt + 1,
+                        delay,
+                    )
+                    time.sleep(delay)
                     continue
                 if response.status_code >= 400:
                     raise ValueError(f"groq HTTP {response.status_code}: {response.text[:200]}")
@@ -480,7 +490,11 @@ def _complete_gemini(api_key: str, model: str, case: Case) -> str:
     from google.genai import types
 
     user = _llm_prompt(case)
-    client = genai.Client(api_key=api_key, http_options={"timeout": 60000})
+    # JSON response_mime_type requires v1beta; default v1 returns 400.
+    client = genai.Client(
+        api_key=api_key,
+        http_options={"timeout": 60000, "api_version": "v1beta"},
+    )
     last: Exception | None = None
     for attempt in range(3):
         try:
@@ -489,7 +503,7 @@ def _complete_gemini(api_key: str, model: str, case: Case) -> str:
                 contents=user,
                 config=types.GenerateContentConfig(
                     temperature=0,
-                    max_output_tokens=1024,
+                    max_output_tokens=2048,
                     response_mime_type="application/json",
                 ),
             )

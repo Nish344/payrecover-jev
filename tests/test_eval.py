@@ -80,3 +80,46 @@ def test_response_cache_roundtrip(tmp_path: Path) -> None:
     cache = ResponseCache(tmp_path / "cache")
     cache.put("k", {"cause": "ambiguous", "confidence": 0.4})
     assert cache.get("k")["cause"] == "ambiguous"
+
+
+def test_purge_fallback_cache_and_llm_label(tmp_path: Path) -> None:
+    from payrecover.eval import (
+        ArmResult,
+        ResponseCache,
+        arm_display_name,
+        purge_fallback_cache,
+    )
+
+    cache = ResponseCache(tmp_path / "cache")
+    cache.put("ok", {"path": "jev", "cause": "ambiguous"})
+    cache.put("poison", {"path": "rules", "cause": "ambiguous"})
+    assert purge_fallback_cache(tmp_path / "cache") == 1
+    assert cache.get("ok") is not None
+    assert cache.get("poison") is None
+    assert arm_display_name("gemini", llm_model="openai/gpt-oss-20b") == (
+        "llm (openai/gpt-oss-20b)"
+    )
+    stub = ArmResult(
+        arm="gemini",
+        split="test",
+        labeled=1,
+        correct=1,
+        accuracy=1.0,
+        accuracy_ci_low=0.2,
+        accuracy_ci_high=1.0,
+        ece=None,
+        cost_usd=0.0,
+        cost_per_1k=0.0,
+        path_counts={},
+        ambiguous_stats={},
+        by_cause={},
+        by_family={},
+        predictions=[],
+    )
+    text = format_eval_report(
+        [stub],
+        llm_model="openai/gpt-oss-20b",
+        include_calibration=False,
+    )
+    assert "llm (openai/gpt-oss-20b)" in text
+    assert "| gemini |" not in text

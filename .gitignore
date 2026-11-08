@@ -3,6 +3,7 @@
 .env.local
 .jev-key
 .razorpay
+.gemini
 *.key
 
 # python

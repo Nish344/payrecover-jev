@@ -111,6 +111,34 @@ class ResponseCache:
         path.write_text(json.dumps(payload, indent=2, sort_keys=True) + "\n", encoding="utf-8")
 
 
+def purge_fallback_cache(cache_dir: Path) -> int:
+    """Delete cached rows whose path is the rules fallback (429/model poison).
+
+    Model arms (jev/gemini) never intentionally cache path=rules; those entries
+    appear when a failed model call fell through to the rules fallback and was
+    written to disk.
+    """
+    if not cache_dir.exists():
+        return 0
+    removed = 0
+    for path in cache_dir.glob("*.json"):
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError):
+            continue
+        if str(payload.get("path") or "") == DiagnosisPath.RULES.value:
+            path.unlink(missing_ok=True)
+            removed += 1
+    return removed
+
+
+def arm_display_name(arm: Arm, *, llm_model: str) -> str:
+    """CLI keeps `gemini` alias; reports show `llm (<model id>)`."""
+    if arm == "gemini":
+        return f"llm ({llm_model})"
+    return arm
+
+
 def evaluate_arms(
     store: Store,
     *,
@@ -333,6 +361,7 @@ def format_eval_report(
     include_calibration: bool = True,
     train_sweep_arm: Arm | None = None,
     train_predictions: list[Prediction] | None = None,
+    llm_model: str = "llm",
 ) -> str:
     lines = [
         "# PayRecover diagnosis eval",
@@ -344,18 +373,20 @@ def format_eval_report(
         "|---|---|---|---|---|---|---|",
     ]
     for result in results:
+        label = arm_display_name(result.arm, llm_model=llm_model)
         ci = f"[{result.accuracy_ci_low:.2%}, {result.accuracy_ci_high:.2%}]"
         ece = "—" if result.ece is None else f"{result.ece:.4f}"
         lines.append(
-            f"| {result.arm} | {result.split} | {result.accuracy:.2%} | {ci} | "
+            f"| {label} | {result.split} | {result.accuracy:.2%} | {ci} | "
             f"{ece} | {result.cost_usd} | {result.cost_per_1k} |"
         )
     lines.append("")
 
     for result in results:
+        label = arm_display_name(result.arm, llm_model=llm_model)
         lines.extend(
             [
-                f"## arm={result.arm} (split={result.split})",
+                f"## arm={label} (split={result.split})",
                 f"- labeled: {result.labeled}",
                 f"- correct: {result.correct}",
                 f"- accuracy: {result.accuracy * 100:.2f}%",
@@ -395,7 +426,7 @@ def format_eval_report(
                 if p.true_cause is not None
             ]
             report = calibration_from_predictions(preds)
-            lines.append(reliability_markdown(report, title=f"reliability ({result.arm})"))
+            lines.append(reliability_markdown(report, title=f"reliability ({label})"))
 
     if train_sweep_arm and train_predictions:
         lines.extend(
@@ -424,7 +455,12 @@ def format_eval_report(
             "",
             "- Dataset is synthetic (diverse paraphrases + hard/adversarial families).",
             "- Single decision-model vendor (Jev via OpenRouter).",
-            "- Finite n: prefer Wilson CIs over point estimates.",
+            "- Finite n: prefer Wilson CIs over point estimates. Overlapping CIs "
+            "are not an accuracy win.",
+            "- `conflicting` family: label is the description; Jev trusts structured "
+            "`error_reason` and will miss those on purpose.",
+            "- A `rules` count inside a model arm is an API failure scored as the "
+            "fallback, not a rules decision.",
             "- Do not cite train-tuned thresholds as test results.",
             "",
         ]
