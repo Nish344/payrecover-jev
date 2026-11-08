@@ -1,0 +1,32 @@
+# secrets
+.env
+.env.local
+.jev-key
+.razorpay
+*.key
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+
+# project data (generated)
+data/
+reports/*
+!reports/sample/
+!reports/sample/**
+
+# editor / local notes
+.cursor/
+.local/
+
+# local pitch / review (not for the public repo)
+docs/demo_videos/
+docs/pitch/
+review.md
+
