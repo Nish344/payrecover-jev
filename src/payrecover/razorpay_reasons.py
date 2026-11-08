@@ -92,6 +92,14 @@ RAZORPAY_REASONS: dict[str, ReasonInfo] = {
         kind="out_of_taxonomy",
         confidence=None,
     ),
+    # Observed 2026-11-08 discovery (netbanking + wallet Failure clicks). Same
+    # structured reason for both; do NOT mark transient — wallet description said
+    # "temporary issue" but netbanking was a bank decline under the same key.
+    "payment_failed": ReasonInfo(
+        cause="ambiguous",
+        kind="out_of_taxonomy",
+        confidence=None,
+    ),
 }
 
 

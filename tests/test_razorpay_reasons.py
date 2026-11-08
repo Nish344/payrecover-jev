@@ -43,6 +43,14 @@ def test_discover_rows_absent() -> None:
         assert key not in RAZORPAY_REASONS
 
 
+def test_observed_payment_failed_is_out_of_taxonomy_not_transient() -> None:
+    info = RAZORPAY_REASONS["payment_failed"]
+    assert info.cause == "ambiguous"
+    assert info.kind == "out_of_taxonomy"
+    assert info.is_transient is False
+    assert transient_corroborated("payment_failed") is False
+
+
 def test_unknown_is_out_of_taxonomy_ambiguous() -> None:
     info = lookup_reason("totally_unknown_reason")
     assert info.kind == "out_of_taxonomy"

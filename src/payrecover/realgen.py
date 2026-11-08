@@ -105,8 +105,11 @@ SCENARIOS: dict[str, ScenarioSpec] = {
     "short_otp": ScenarioSpec(
         key="short_otp",
         pr_label="discover",
-        cards="any success card (e.g. 4111 1111 1111 1111)",
-        how_to_fail="Open link → pay with success card → enter 1–3 digit OTP → submit",
+        cards="domestic success test card only (NOT 4111… — that is international on domestic-only accounts)",
+        how_to_fail=(
+            "Open link → card → domestic success card from Razorpay test docs → "
+            "enter 1–3 digit OTP → submit (must reach OTP page)"
+        ),
     ),
 }
 

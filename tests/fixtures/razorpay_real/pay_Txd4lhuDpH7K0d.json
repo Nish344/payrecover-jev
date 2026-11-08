@@ -1,0 +1,36 @@
+{
+  "acquirer_data": {
+    "bank_transaction_id": null
+  },
+  "amount": 10000,
+  "amount_refunded": 0,
+  "bank": "BARB_R",
+  "captured": false,
+  "card_id": null,
+  "created_at": 1794129590,
+  "currency": "INR",
+  "description": "#Txcnd4TbbyVIWe",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Your payment didn't go through as it was declined by the bank. Try another payment method or contact your bank.",
+  "error_reason": "payment_failed",
+  "error_source": "bank",
+  "error_step": "payment_authorization",
+  "fee": null,
+  "id": "pay_Txd4lhuDpH7K0d",
+  "international": false,
+  "invoice_id": null,
+  "method": "netbanking",
+  "notes": {
+    "case_id": "real_real-v1_netbanking_failure_1",
+    "pr_cohort": "real-v1",
+    "pr_label": "discover",
+    "pr_scenario": "netbanking_failure"
+  },
+  "order_id": "order_Txd4V7H8Jv1Whg",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "vpa": null,
+  "wallet": null
+}

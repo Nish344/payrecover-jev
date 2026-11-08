@@ -1,0 +1,36 @@
+{
+  "acquirer_data": {
+    "transaction_id": null
+  },
+  "amount": 10000,
+  "amount_refunded": 0,
+  "bank": null,
+  "captured": false,
+  "card_id": null,
+  "created_at": 1794129629,
+  "currency": "INR",
+  "description": "#TxcndlvyYaLl0B",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Your payment didn't go through due to a temporary issue. Any debited amount will be refunded in 4-5 business days.",
+  "error_reason": "payment_failed",
+  "error_source": "issuer",
+  "error_step": "payment_authorization",
+  "fee": null,
+  "id": "pay_Txd5SBAwDjxBjj",
+  "international": false,
+  "invoice_id": null,
+  "method": "wallet",
+  "notes": {
+    "case_id": "real_real-v1_wallet_failure_1",
+    "pr_cohort": "real-v1",
+    "pr_label": "discover",
+    "pr_scenario": "wallet_failure"
+  },
+  "order_id": "order_Txd56YPQN69ABX",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "vpa": null,
+  "wallet": "olamoney"
+}

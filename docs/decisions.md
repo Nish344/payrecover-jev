@@ -422,3 +422,48 @@ implementation above. C1–C3 remain disclose-only; C4 was implemented in
 - Next: **discovery step 1** — `realgen` UPI/netbanking/wallet/short_otp ×1, pay manually,
   `detect --since 1d --cohort real-v1`, paste observed reasons here before extending
   `razorpay_reasons.py`.
+
+---
+
+## 2026-11-08 (Part III — C3 discovery observations)
+
+Manual pay of discovery links (`cohort=real-v1`, repeat 1). Detected 3 failures.
+
+### UPI — not offered
+- Checkout on the Payment Link had **no UPI method** on this test account.
+- No payment object; **no `error_reason` invented**. `upi_failure` stays discover-only
+  in `realgen` until a link actually exposes UPI.
+
+### Netbanking — observed (`pay_Txd4lhuDpH7K0d`)
+- method=`netbanking`, bank=`BARB_R`
+- error_code=`BAD_REQUEST_ERROR`
+- error_reason=`payment_failed`
+- error_source=`bank`
+- error_step=`payment_authorization`
+- error_description=`Your payment didn't go through as it was declined by the bank. Try another payment method or contact your bank.`
+
+### Wallet — observed (`pay_Txd5SBAwDjxBjj`)
+- method=`wallet`, wallet=`olamoney`
+- error_code=`BAD_REQUEST_ERROR`
+- error_reason=`payment_failed`  ← **same reason string as netbanking**
+- error_source=`issuer`
+- error_step=`payment_authorization`
+- error_description=`Your payment didn't go through due to a temporary issue. Any debited amount will be refunded in 4-5 business days.`
+
+### Catalogue decision for `payment_failed`
+- Added to `razorpay_reasons.py` as `kind=out_of_taxonomy`, `cause=ambiguous`,
+  `is_transient=false`.
+- Rejected treating it as transient corroboration: wallet text says "temporary" but
+  netbanking under the same key is a bank decline. Description must not mint WAIT.
+
+### short_otp — misfire (`pay_Txd6aqSwpHHTfh`)
+- Used `4111 1111 1111 1111`; never reached OTP.
+- error_reason=`international_transaction_not_allowed`, error_source=`business`,
+  error_step=`payment_initiation`, `card.international=true`, last4=`1111`.
+- Domestic-only merchant blocked the card at initiation. **No OTP-like reason observed;
+  do not add a short_otp / invalid_otp mapping from this attempt.**
+- Retry needs a **domestic** Razorpay success test card (not 4111…).
+
+### Next
+- Optional: regenerate `short_otp` link and retry with a domestic success card.
+- Then C3 step 2 full `realgen --scenarios all --repeat 2` → pay → detect → C4.
