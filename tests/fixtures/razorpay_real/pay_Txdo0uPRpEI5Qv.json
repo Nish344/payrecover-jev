@@ -1,0 +1,48 @@
+{
+  "acquirer_data": {
+    "auth_code": null
+  },
+  "amount": 10000,
+  "amount_refunded": 0,
+  "bank": null,
+  "captured": false,
+  "card": {
+    "emi": false,
+    "entity": "card",
+    "id": "card_Txdo16Zi8qdDR5",
+    "international": true,
+    "issuer": "",
+    "last4": "1881",
+    "network": "Visa",
+    "sub_type": "business",
+    "token_iin": "401288888",
+    "type": "credit"
+  },
+  "card_id": "card_Txdo16Zi8qdDR5",
+  "created_at": 1794132160,
+  "currency": "INR",
+  "description": "#TxdLl8GqAN4jB2",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Your payment could not be completed as this business accepts domestic (Indian) card payments only. Try another payment method.",
+  "error_reason": "international_transaction_not_allowed",
+  "error_source": "business",
+  "error_step": "payment_initiation",
+  "fee": null,
+  "id": "pay_Txdo0uPRpEI5Qv",
+  "international": true,
+  "invoice_id": null,
+  "method": "card",
+  "notes": {
+    "case_id": "real_real-v2_international_transaction_not__1",
+    "pr_cohort": "real-v2",
+    "pr_label": "international_transaction_not_allowed",
+    "pr_scenario": "international_transaction_not_allowed"
+  },
+  "order_id": "order_Txdn3OeSSRF2gm",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "vpa": null,
+  "wallet": null
+}

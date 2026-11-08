@@ -1,0 +1,48 @@
+{
+  "acquirer_data": {
+    "auth_code": null
+  },
+  "amount": 10000,
+  "amount_refunded": 0,
+  "bank": null,
+  "captured": false,
+  "card": {
+    "emi": false,
+    "entity": "card",
+    "id": "card_Txe0nJPkFK0DYl",
+    "international": false,
+    "issuer": "DCBL",
+    "last4": "0006",
+    "network": "Visa",
+    "sub_type": "consumer",
+    "token_iin": "410028000",
+    "type": "debit"
+  },
+  "card_id": "card_Txe0nJPkFK0DYl",
+  "created_at": 1794132886,
+  "currency": "INR",
+  "description": "#TxdN4yxYMP9759",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Payment failed",
+  "error_reason": "payment_failed",
+  "error_source": "gateway",
+  "error_step": "payment_authorization",
+  "fee": null,
+  "id": "pay_Txe0n5YP2GHMIU",
+  "international": false,
+  "invoice_id": null,
+  "method": "card",
+  "notes": {
+    "case_id": "real_real-v2_card_disabled_for_online_payme_2",
+    "pr_cohort": "real-v2",
+    "pr_label": "ambiguous",
+    "pr_scenario": "card_disabled_for_online_payments"
+  },
+  "order_id": "order_Txe0517mMUviXY",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "vpa": null,
+  "wallet": null
+}

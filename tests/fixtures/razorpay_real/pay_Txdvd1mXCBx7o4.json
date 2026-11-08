@@ -1,0 +1,48 @@
+{
+  "acquirer_data": {
+    "auth_code": null
+  },
+  "amount": 10000,
+  "amount_refunded": 0,
+  "bank": null,
+  "captured": false,
+  "card": {
+    "emi": false,
+    "entity": "card",
+    "id": "card_TxdvdFmyNnIJKX",
+    "international": false,
+    "issuer": "DCBL",
+    "last4": "0001",
+    "network": "Visa",
+    "sub_type": "consumer",
+    "token_iin": "410028000",
+    "type": "debit"
+  },
+  "card_id": "card_TxdvdFmyNnIJKX",
+  "created_at": 1794132593,
+  "currency": "INR",
+  "description": "#TxdUP8EuF2dAFc",
+  "entity": "payment",
+  "error_code": "BAD_REQUEST_ERROR",
+  "error_description": "Payment failed",
+  "error_reason": "payment_failed",
+  "error_source": "gateway",
+  "error_step": "payment_authorization",
+  "fee": null,
+  "id": "pay_Txdvd1mXCBx7o4",
+  "international": false,
+  "invoice_id": null,
+  "method": "card",
+  "notes": {
+    "case_id": "real_real-v3_insufficient_fund_1",
+    "pr_cohort": "real-v3",
+    "pr_label": "insufficient_funds",
+    "pr_scenario": "insufficient_fund"
+  },
+  "order_id": "order_TxdWrZ4xa4p0sV",
+  "refund_status": null,
+  "status": "failed",
+  "tax": null,
+  "vpa": null,
+  "wallet": null
+}
