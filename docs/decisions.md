@@ -456,14 +456,21 @@ Manual pay of discovery links (`cohort=real-v1`, repeat 1). Detected 3 failures.
 - Rejected treating it as transient corroboration: wallet text says "temporary" but
   netbanking under the same key is a bank decline. Description must not mint WAIT.
 
-### short_otp — misfire (`pay_Txd6aqSwpHHTfh`)
-- Used `4111 1111 1111 1111`; never reached OTP.
-- error_reason=`international_transaction_not_allowed`, error_source=`business`,
-  error_step=`payment_initiation`, `card.international=true`, last4=`1111`.
-- Domestic-only merchant blocked the card at initiation. **No OTP-like reason observed;
-  do not add a short_otp / invalid_otp mapping from this attempt.**
-- Retry needs a **domestic** Razorpay success test card (not 4111…).
+### short_otp — misfire then client-side only
+1. First attempt (`pay_Txd6aqSwpHHTfh`, cohort `real-v1`): used `4111…` →
+   `international_transaction_not_allowed` at `payment_initiation` (never OTP).
+2. Retry (`pay_TxdAH7484uAw8B`, cohort `real-v1-otp2`): domestic card `…5060`
+   (`international=false`) reached OTP. UI said:
+   > You've entered an incorrect OTP. Please enter an OTP of length between 4-10 digits.
+3. **API finding:** that payment stayed `status=created` with **all `error_*` null**.
+   Short OTP is Checkout **client-side validation** — it does **not** mint a failed
+   `pay_*` object, so `detect` correctly ignores it. **Do not invent an
+   `error_reason` for short_otp.**
+4. To observe an API-level OTP failure, retry with a **full-length wrong OTP**
+   (4–10 digits, incorrect) — expect something like `authentication_failed` /
+   `invalid_otp` if Razorpay emits one.
 
 ### Next
-- Optional: regenerate `short_otp` link and retry with a domestic success card.
+- Optional: same link https://rzp.io/rzp/h4KRa5E → domestic card → enter a **wrong
+  full-length OTP** (e.g. `0000` or `1234`) → confirm UI failure → then detect.
 - Then C3 step 2 full `realgen --scenarios all --repeat 2` → pay → detect → C4.
